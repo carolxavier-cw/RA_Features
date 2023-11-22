@@ -5,10 +5,8 @@ reports AS (
         id AS ra_id,
         user_id,
         ticket_creation_date AS created_at,
-        last_update_date AS updated_at,
         public_treatment_time AS time_to_first_contact,
         first_contact_time AS call_contact_time,
-        DATE_DIFF(last_update_date, ticket_creation_date, SECOND) AS time_to_last_update,
         rating,
         resolved_issue, --bool
         back_doing_business --bool
@@ -30,8 +28,8 @@ merchant_agg AS (
     SELECT
         merchants.user_id AS merchant_id,
         COALESCE(
-            reports.created_at,
-            merchants.merchant_created_at
+            TIMESTAMP(DATE_ADD(CAST(reports.created_at AS DATE), INTERVAL 1 DAY)),
+            TIMESTAMP(DATE_ADD(CAST(merchants.merchant_created_at AS DATE), INTERVAL 1 DAY))
         ) AS event_timestamp,
 
         --Count of RA reports by merchant
