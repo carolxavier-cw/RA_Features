@@ -10,8 +10,11 @@ reports AS (
         DATE_DIFF(first_contact_time, ticket_creation_date, SECOND) AS time_to_cse_interaction,
         rating,
         resolved_issue, --bool
-        back_doing_business --bool
-
+        back_doing_business, --bool
+        CASE 
+            WHEN (rating >= 8 AND back_doing_business = true AND resolved_issue = true) THEN 'good'
+            ELSE 'bad'
+        END AS rating_evaluation
     FROM 
         infinitepay-production.maindb.ra_reports
     WHERE user_id IS NOT NULL
@@ -82,6 +85,20 @@ merchant_agg AS (
         AVG(CASE WHEN rating IS NOT NULL THEN rating END) OVER W30d AS avg_ra_rating_last_30d,
         AVG(CASE WHEN rating IS NOT NULL THEN rating END) OVER W15d AS avg_ra_rating_last_15d,
         AVG(CASE WHEN rating IS NOT NULL THEN rating END) OVER W7d AS avg_ra_rating_last_7d,
+        --Count RA reports with "good rating" by merchant
+        COUNT(CASE WHEN rating_evaluation = 'good' THEN 1 END) OVER Wunb AS count_ra_good_rating_unbounded,
+        COUNT(CASE WHEN rating_evaluation = 'good' THEN 1 END) OVER W90d AS count_ra_good_rating_last_90d,
+        COUNT(CASE WHEN rating_evaluation = 'good' THEN 1 END) OVER W60d AS count_ra_good_rating_last_60d,
+        COUNT(CASE WHEN rating_evaluation = 'good' THEN 1 END) OVER W30d AS count_ra_good_rating_last_30d,
+        COUNT(CASE WHEN rating_evaluation = 'good' THEN 1 END) OVER W15d AS count_ra_good_rating_last_15d,
+        COUNT(CASE WHEN rating_evaluation = 'good' THEN 1 END) OVER W7d AS count_ra_good_rating_last_7d,
+        --Count RA reports with "bad rating" by merchant
+        COUNT(CASE WHEN rating_evaluation = 'bad' THEN 1 END) OVER Wunb AS count_ra_bad_rating_unbounded,
+        COUNT(CASE WHEN rating_evaluation = 'bad' THEN 1 END) OVER W90d AS count_ra_bad_rating_last_90d,
+        COUNT(CASE WHEN rating_evaluation = 'bad' THEN 1 END) OVER W60d AS count_ra_bad_rating_last_60d,
+        COUNT(CASE WHEN rating_evaluation = 'bad' THEN 1 END) OVER W30d AS count_ra_bad_rating_last_30d,
+        COUNT(CASE WHEN rating_evaluation = 'bad' THEN 1 END) OVER W15d AS count_ra_bad_rating_last_15d,
+        COUNT(CASE WHEN rating_evaluation = 'bad' THEN 1 END) OVER W7d AS count_ra_bad_rating_last_7d,
         --AVG time to first contact in seconds by merchant
         AVG(reports.time_to_first_contact) OVER Wunb AS avg_ra_time_first_reply_seconds_by_merchant_unbounded,
         AVG(reports.time_to_first_contact) OVER W90d AS avg_ra_time_first_reply_seconds_by_merchant_last_90d,
